@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/teoshuqi/Documents/MLOps/experiments/372768143101628482/ed7d68251e4644c9bbbcf1304cfae400/artifacts
+end_time: 1674230395204
+entry_point_name: ''
+experiment_id: '372768143101628482'
+lifecycle_stage: active
+run_id: ed7d68251e4644c9bbbcf1304cfae400
+run_name: lg
+run_uuid: ed7d68251e4644c9bbbcf1304cfae400
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1674230394855
+status: 3
+tags: []
+user_id: teoshuqi
