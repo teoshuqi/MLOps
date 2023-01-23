@@ -1,0 +1,6 @@
+{
+    "C":10,
+    "max_iter":100,
+    "tol":0.001,
+    "solver":"lbfgs"
+}
