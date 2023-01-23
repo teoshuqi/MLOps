@@ -1,4 +1,6 @@
-.ipynb_checkpoints/
-.DS_Store
-experiments/
 venv/
+venv/lib/
+.ipynb_checkpoints/
+SuperstoreMarketingCampaign.egg-info/
+experiments/
+.DS_Store
