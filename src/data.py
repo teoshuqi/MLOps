@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 from config import config
 
 class MinMaxScaler:
@@ -136,3 +137,13 @@ def preprocess(df, xcols, y_cols):
     df, data_minmax_scaler = create_and_fit_all_data_scaler(df, config.CONTINUOUS_COLS)
     X, y = df[xcols], df[y_cols]
     return (X,y), label_encoder, data_minmax_scaler
+
+def get_data_splits(X, y, train_size=0.7, seed=42):
+    """
+    Generate balanced data splits.
+    """
+    X_train, X_, y_train, y_ = train_test_split(
+        X, y, train_size=train_size, stratify=y, random_state=seed)
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_, y_, train_size=0.5, stratify=y_, random_state=seed)
+    return X_train, X_val, X_test, y_train, y_val, y_test
