@@ -11,7 +11,7 @@ def create_connection(db_file):
         conn = sqlite3.connect(db_file)
         return conn
     except Exception as e:
-        print(e)
+        config.logger.info(e)
 
     return conn
 
@@ -25,7 +25,7 @@ def create_table(conn, create_table_sql):
         c = conn.cursor()
         c.execute(create_table_sql)
     except Exception as e:
-        print(e)
+        config.logger.info(e)
 
 def main():
     database = r"C:\sqlite\db\pythonsqlite.db"
@@ -59,4 +59,4 @@ def main():
         # create tasks table
         create_table(conn, sql_create_tasks_table)
     else:
-        print("Error! cannot create the database connection.")
+        config.logger.info("Error! cannot create the database connection.")

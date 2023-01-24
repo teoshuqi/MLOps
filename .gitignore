@@ -1,6 +1,6 @@
 venv/
-venv/lib/
 .ipynb_checkpoints/
 SuperstoreMarketingCampaign.egg-info/
-experiments/
+stores/
 .DS_Store
+*.pyc

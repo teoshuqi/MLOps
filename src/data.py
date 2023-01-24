@@ -8,6 +8,7 @@ class MinMaxScaler:
     def __init__(self):
         self.min = 0
         self.max = 1
+        self.median = 0.5
 
     def __str__(self):
         return f"<MinMaxSclaer(min={self.min}, max={self.max})>"
@@ -15,18 +16,23 @@ class MinMaxScaler:
     def fit(self, data):
         self.min = min(data)
         self.max = max(data)
+        self.median = np.nanmedian(data)
 
     def encode(self, data):
         scaler = lambda x: (x-self.min)/(self.max-self.min)
         scaled_data = []
-        scaled_data = [scaler(i) for i in data]
-        return data
+        for d in data:
+            if pd.notna(d):
+                scaled_data.append(scaler(d))
+            else:
+                scaled_data.append(scaler(self.median))
+        return scaled_data
 
     def decode(self, scaled_data):
         unscaler = lambda x: x*(self.max-self.min) + self.min
-        data = []
-        scaled_data = [unscaler(i) for i in scaled_data]
-        return data
+        unscaled_data = []
+        unscaled_data = [unscaler(i) for i in scaled_data]
+        return unscaled_data
 
 class LabelEncoder:
     """Encode labels into unique indices."""
@@ -88,16 +94,22 @@ def label_encoder(data):
     encoder.fit(labels)
     return encoder
 
-def create_and_fit_all_label_encoder(df, cols):
+def fit_all_label_encoder(df, label_encoders, cols):
     """
-    Create and encode all categorical columns
+    Encode all categorical columns
     """
-    label_encoder_store = {}
     for col in cols:
-        encoder = label_encoder(df[col])
-        label_encoder_store[col] = encoder
-        df[col] = encoder.encode(df[col])
-    return df, label_encoder_store
+        if col in label_encoders:
+            encoder = label_encoders[col]
+            df[col] = encoder.encode(df[col])
+    return df
+
+def create_all_label_encoder(df, cols):
+    """
+    Create all categorical columns
+    """
+    label_encoder_store = {col:label_encoder(df[col]) for col in cols}
+    return label_encoder_store
 
 def data_minmax_scaler(data):
     """
@@ -107,18 +119,22 @@ def data_minmax_scaler(data):
     scaler.fit(data.values)
     return scaler
 
-def create_and_fit_all_data_scaler(df, cols):
+def fit_all_data_scaler(df, data_scalers, cols):
     """
-    Create and scale al continuous columns
+    Fit scaler for all continuous columns
     """
-    data_scaler_store = {}
     for col in cols:
-        median = df[col].median()
-        df[col] = df[col].fillna(median)
-        scaler = data_minmax_scaler(df[col])
-        data_scaler_store[col] = [median, scaler]
-        df[col] = scaler.encode(df[col].values)
-    return df, data_scaler_store
+        if col in data_scalers:
+            scaler = data_scalers[col]
+            df[col] = scaler.encode(df[col])
+    return df
+
+def create_all_data_scaler(df, cols, fit=True):
+    """
+    Create scaler for all continuous columns
+    """
+    data_scaler_store = {col:data_minmax_scaler(df[col]) for col in cols}
+    return data_scaler_store
 
 def clean_data(df):
     """
@@ -133,10 +149,25 @@ def preprocess(df, xcols, y_cols):
     """
     df = create_features(df)
     df = clean_data(df)
-    df, label_encoder = create_and_fit_all_label_encoder(df, config.CATEGORICAL_COLS)
-    df, data_minmax_scaler = create_and_fit_all_data_scaler(df, config.CONTINUOUS_COLS)
+    label_encoder_store = create_all_label_encoder(df, config.CATEGORICAL_COLS)
+    df = fit_all_label_encoder(df, label_encoder_store, config.CATEGORICAL_COLS)
+    minmax_scaler_store = create_all_data_scaler(df, config.CONTINUOUS_COLS)
+    df = fit_all_data_scaler(df, minmax_scaler_store, config.CONTINUOUS_COLS)
     X, y = df[xcols], df[y_cols]
-    return (X,y), label_encoder, data_minmax_scaler
+    return (X,y), label_encoder_store, minmax_scaler_store
+
+def preprocess_predict(df, artifacts):
+    """
+    Preprocess raw data into final data for prediction
+    """
+    df = create_features(df)
+    df = clean_data(df)
+    label_encoder_store = artifacts['label_encoder']
+
+    df = fit_all_label_encoder(df, label_encoder_store, config.CATEGORICAL_COLS)
+    minmax_scaler_store = artifacts['minmax_scaler']
+    df = fit_all_data_scaler(df, minmax_scaler_store, config.CONTINUOUS_COLS)
+    return df
 
 def get_data_splits(X, y, train_size=0.7, seed=42):
     """
