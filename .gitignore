@@ -2,5 +2,6 @@ venv/
 .ipynb_checkpoints/
 SuperstoreMarketingCampaign.egg-info/
 stores/
+experiments/
 .DS_Store
 *.pyc

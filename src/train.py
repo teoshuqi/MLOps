@@ -3,16 +3,31 @@
 from imblearn.over_sampling import RandomOverSampler
 import json
 import mlflow
+import optuna
 import numpy as np
 import pandas as pd
+from argparse import Namespace
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss
+from typing import Dict
 
 from config import config
 from src import data, predict, utils, evaluate
 
-def train(args, df, trial=None):
+def train(args: Namespace, df: pd.DataFrame, trial:optuna.trial._trial.Trial=None) -> Dict:
+    """
+    Train model on data.
+
+    Args:
+        args (Namespace): arguments to use for training
+        df (pd.DataFrame): data for training
+        trial (optuna.trial._trial.Trial, optional): optimization trial
+
+    Returns:
+        Dict: artificats from the run
+    """
     utils.set_seeds()
+
     # Preprocess Data
     cols = config.CONTINUOUS_COLS + config.CATEGORICAL_COLS
     (X,y), label_encoder_store, minmax_scaler_store = data.preprocess(df, cols, 'Response')
@@ -48,8 +63,18 @@ def train(args, df, trial=None):
         "minmax_scaler":minmax_scaler_store
     }
   
-def objective(args, df, trial):
-    """Objective function for optimization trials."""
+def objective(args: Namespace, df:pd.DataFrame, trial:optuna.trial._trial.Trial) -> float:
+    """
+    Objective function for optimization trials.
+    
+    Args:
+        args (Namespace): arguments to use for training
+        df (pd.DataFrame): data for training
+        trial (optuna.trial._trial.Trial, optional): optimization trial
+
+    Returns:
+        float: metric value (recall) to be used for optimization
+    """
     # Parameters to tune
     args.solver = trial.suggest_categorical("solver", ['lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga'])
     args.max_iter = trial.suggest_int("max_iter", 50, 1000)

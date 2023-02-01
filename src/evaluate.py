@@ -1,21 +1,36 @@
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 import numpy as np
 from config import config
+from typing import List
 
-def get_metrics(y_pred, y_test, classes=config.CLASSES, average=None):
-    """Performance metrics using ground truths and predictions."""
+def get_metrics(
+    y_pred: np.ndarray, 
+    y_test: np.ndarray, 
+    classes: List = config.CLASSES
+    ):
+    """
+    Performance metrics using ground truths and predictions.
+
+    Args:
+        y_true (np.ndarray): true labels.
+        y_pred (np.ndarray): predicted labels.
+        classes (List): list of class labels.
+    Returns:
+        Dict: performance metrics.
+    """
+    y_test_str = [config.CLASSES[i] for i in y_test]
     # Performance
     metrics = {"overall": {}, "class": {}}
 
     # Overall metrics
-    overall_metrics = precision_recall_fscore_support(y_test, y_pred, average="weighted")
+    overall_metrics = precision_recall_fscore_support(y_test_str, y_pred, average="weighted")
     metrics["overall"]["precision"] = overall_metrics[0]
     metrics["overall"]["recall"] = overall_metrics[1]
     metrics["overall"]["f1"] = overall_metrics[2]
-    metrics["overall"]["num_samples"] = np.float64(len(y_test))
+    metrics["overall"]["num_samples"] = np.float64(len(y_test_str))
 
     # Per-class metrics
-    class_metrics = precision_recall_fscore_support(y_test, y_pred, average=None)
+    class_metrics = precision_recall_fscore_support(y_test_str, y_pred, average=None)
     for i, _class in enumerate(classes):
         metrics["class"][_class] = {
             "precision": class_metrics[0][i],

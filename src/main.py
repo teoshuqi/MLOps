@@ -11,6 +11,7 @@ import optuna
 from optuna.integration.mlflow import MLflowCallback
 
 from config import config
+from typing import Dict
 from src import utils, data, train, predict
 
 warnings.filterwarnings("ignore")
@@ -22,8 +23,21 @@ def elt_data():
     # Transform
     return
 
-def train_model(args_fp, experiment_name, run_name):
-    """Train a model given arguments."""
+def train_model(
+    args_fp: str = "config/args.json", 
+    experiment_name: str = "baselines", 
+    run_name: str = "lg",
+    test_run: bool = False
+    ) -> None:
+    """
+    Train a model given arguments.
+
+    Args:
+        args_fp (str): location of args.
+        experiment_name (str): name of experiment.
+        run_name (str): name of specific run in experiment.
+        test_run (bool, optional): If True, artifacts will not be saved. Defaults to False.
+    """
     # Load labeled data
     df = pd.read_csv(Path(config.DATA_DIR, config.SUPERSTORE_DATA_URL))
 
@@ -55,12 +69,24 @@ def train_model(args_fp, experiment_name, run_name):
             mlflow.log_artifacts(dp)
 
     # Save to config
-    open(Path(config.CONFIG_DIR, "run_id.txt"), "w").write(run_id)
-    utils.save_dict(performance, Path(config.CONFIG_DIR, "performance.json"))
+    if not test_run:
+        open(Path(config.CONFIG_DIR, "run_id.txt"), "w").write(run_id)
+        utils.save_dict(performance, Path(config.CONFIG_DIR, "performance.json"))
 
 
-def optimize(args_fp, study_name, num_trials):
-    """Optimize hyperparameters."""
+def optimize(    
+    args_fp: str = "config/args.json", 
+    study_name: str = "optimization", 
+    num_trials: int = 20
+    ) -> None:
+    """
+    Optimize hyperparameters.
+
+    Args:
+        args_fp (str): location of args.
+        study_name (str): name of optimization study.
+        num_trials (int): number of trials to run in study.
+    """
     # Load labeled data
     df = pd.read_csv(Path(config.DATA_DIR, config.SUPERSTORE_DATA_URL))
 
@@ -83,8 +109,13 @@ def optimize(args_fp, study_name, num_trials):
     config.logger.info(f"\nBest value (f1): {study.best_trial.value}")
     config.logger.info(f"Best hyperparameters: {json.dumps(study.best_trial.params, indent=2)}")
 
-def load_artifacts(run_id):
-    """Load artifacts for a given run_id."""
+def load_artifacts(run_id: str = None) -> Dict:
+    """Load artifacts for a given run_id.
+    Args:
+        run_id (str): id of run to load artifacts from.
+    Returns:
+        Dict: run's artifacts.
+    """
     # Locate specifics artifacts directory
     experiment_id = mlflow.get_run(run_id=run_id).info.experiment_id
     artifacts_dir = Path(config.MODEL_REGISTRY, experiment_id, run_id, "artifacts")
@@ -104,8 +135,14 @@ def load_artifacts(run_id):
         "performance": performance
     }
 
-def predict_acceptance(data, run_id=None):
-    """Predict if customers will accept superstore campaign."""
+def predict_acceptance(data: pd.DataFrame, run_id:str = None) -> None:
+    """
+    Predict if customers will accept superstore campaign.
+    
+    Args:
+        data (pd.DataFrame): input customer data to predict label.
+        run_id (str, optional): run id to load artifacts for prediction. Defaults to None.
+    """
     if not run_id:
         run_id = open(Path(config.CONFIG_DIR, "run_id.txt")).read()
     artifacts = load_artifacts(run_id=run_id)

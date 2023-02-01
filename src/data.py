@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from config import config
+from typing import Dict, List, Tuple
 
 class MinMaxScaler:
     """Scale data using min max standardisation"""
@@ -67,36 +68,64 @@ class LabelEncoder:
             classes.append(self.index_to_class[item])
         return classes
 
-def create_features(df):
+def create_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Create new features from existing columns
+
+    Args:
+        df (pd.DataFrame): pandas data frame with raw customer data
+
+    Returns:
+        pd.DataFrame: Dataframe with addtional derived features
     """
     df['Age'] = 2022 - df['Year_Birth']
     get_customer_year = lambda x: int(x.split('/')[-1])
     df['Enrollment'] = 2022 - df['Dt_Customer'].apply(get_customer_year)
     return df
 
-def clean_marital_data(marital_data):
+def clean_marital_data(marital_data: pd.Series) -> pd.Series:
     """
     Clean Marital Status feature by aggregating miscellaneous replies into others
+
+    Args:
+        marital_data (pd.Series): dataframe series with marital data of customers
+    
+    Retunrs:
+        pd.Series: cleaned marital data for customers
     """
     fixed_marital_status = ['Divorced', 'Single', 'Married', 'Together', 'Widow', 'Others']
     clean_marital_status = lambda x: x if x in fixed_marital_status else 'Others'
     cleaned_marital_data = marital_data.apply(clean_marital_status)
     return cleaned_marital_data
 
-def label_encoder(data):
+def label_encoder(data: pd.Series) -> LabelEncoder:
     """
-    Label Encoder
+    Fit label encoder on feature provided
+
+    Args:
+        data (pd.Series): feature with labels to encode
+
+    Returns:
+        LabelEncoder: LabelEncoder Class for feature provided
     """
     encoder = LabelEncoder()
     labels = data.unique()
     encoder.fit(labels)
     return encoder
 
-def fit_all_label_encoder(df, label_encoders, cols):
+def fit_all_label_encoder(df: pd.DataFrame, 
+                          label_encoders:Dict = {}, 
+                          cols:List = config.CATEGORICAL_COLS) -> pd.DataFrame:
     """
     Encode all categorical columns
+
+    Args:
+        df (pd.DataFrame): Customer data to transform
+        label_encoders (Dict): Dict of LabelEncoder class for each feature
+        cols (List): List of features to fit label encoders
+    
+    Returns:
+        pd.DataFrame: Customer data with labels encoded
     """
     for col in cols:
         if col in label_encoders:
@@ -104,24 +133,48 @@ def fit_all_label_encoder(df, label_encoders, cols):
             df[col] = encoder.encode(df[col])
     return df
 
-def create_all_label_encoder(df, cols):
+def create_all_label_encoder(df:pd.DataFrame, 
+                            cols:List = config.CATEGORICAL_COLS) -> Dict:
     """
-    Create all categorical columns
+    Fit label encoder for all given features of customer data
+
+    Args:
+        data (pd.Series): feature with labels to encode
+        cols (List): List of features to fit label encoders
+
+    Returns:
+        Dict: Dict of LabelEncoder class for each feature
     """
     label_encoder_store = {col:label_encoder(df[col]) for col in cols}
     return label_encoder_store
 
-def data_minmax_scaler(data):
+def data_minmax_scaler(data: pd.Series) -> MinMaxScaler:
     """
-    Min max scaler for continuous variable
+    Fit min max scaler on feature provided
+
+    Args:
+        data (pd.Series): feature with data to scale
+
+    Returns:
+        MinMaxScaler: MinMaxScaler Class for feature provided
     """
     scaler = MinMaxScaler()
     scaler.fit(data.values)
     return scaler
 
-def fit_all_data_scaler(df, data_scalers, cols):
+def fit_all_data_scaler(df:pd.DataFrame, 
+                        data_scalers:Dict = {}, 
+                        cols:List = config.CONTINUOUS_COLS) -> pd.DataFrame:
     """
-    Fit scaler for all continuous columns
+    Encode all continuous columns
+
+    Args:
+        df (pd.DataFrame): Customer data to transform
+        data_scalers (Dict): Dict of MinMaxScaler class for each feature
+        cols (List): List of features to scale
+    
+    Returns:
+        pd.DataFrame: Customer data with features scaled
     """
     for col in cols:
         if col in data_scalers:
@@ -129,23 +182,43 @@ def fit_all_data_scaler(df, data_scalers, cols):
             df[col] = scaler.encode(df[col])
     return df
 
-def create_all_data_scaler(df, cols, fit=True):
+def create_all_data_scaler(df: pd.DataFrame, 
+                           cols:List = config.CONTINUOUS_COLS
+                           ) -> Dict:
     """
-    Create scaler for all continuous columns
+    Fit data scaler for all given features of customer data
+
+    Args:
+        data (pd.Series): feature with labels to encode
+        cols (List): List of features to scale
+
+    Returns:
+        Dict: Dict of MinMaxScaler class for each feature
     """
     data_scaler_store = {col:data_minmax_scaler(df[col]) for col in cols}
     return data_scaler_store
 
-def clean_data(df):
+def clean_data(df:pd.DataFrame) -> pd.DataFrame:
     """
     Data cleaning
     """
     df['Marital_Status'] = clean_marital_data(df['Marital_Status'])
     return df
 
-def preprocess(df, xcols, y_cols):
+def preprocess(df:pd.DataFrame, 
+               xcols:List, 
+               y_cols: List) -> Tuple:
     """
     Preprocess raw data into final data for model fitting
+
+    Args:
+        df (pd.DataFrame): Customer data to transform
+        xcols: list of features
+        ycols: response name
+    
+    Returns:
+        Tuple: transformed data and its corresponding artifacts
+
     """
     df = create_features(df)
     df = clean_data(df)
@@ -156,9 +229,18 @@ def preprocess(df, xcols, y_cols):
     X, y = df[xcols], df[y_cols]
     return (X,y), label_encoder_store, minmax_scaler_store
 
-def preprocess_predict(df, artifacts):
+def preprocess_predict(df:pd.DataFrame, 
+                       artifacts:Dict) -> Tuple:
     """
     Preprocess raw data into final data for prediction
+
+    Args:
+        df (pd.DataFrame): Customer data to transform
+        artifacts (Dict): Artifacts to be used to preprocess data
+    
+    Returns:
+        Tuple: transformed data and its corresponding artifacts
+
     """
     df = create_features(df)
     df = clean_data(df)
@@ -169,9 +251,17 @@ def preprocess_predict(df, artifacts):
     df = fit_all_data_scaler(df, minmax_scaler_store, config.CONTINUOUS_COLS)
     return df
 
-def get_data_splits(X, y, train_size=0.7, seed=42):
-    """
-    Generate balanced data splits.
+def get_data_splits(X:pd.DataFrame, 
+                    y:pd.Series, 
+                    train_size:float=0.7, seed:int=42):
+    """Generate balanced data splits.
+    Args:
+        X (pd.Series): input features.
+        y (np.ndarray): encoded labels.
+        train_size (float, optional): proportion of data to use for training. Defaults to 0.7.
+        seed (int, optional): seed number. Default to 42
+    Returns:
+        Tuple: data splits as Numpy arrays.
     """
     X_train, X_, y_train, y_ = train_test_split(
         X, y, train_size=train_size, stratify=y, random_state=seed)

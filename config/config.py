@@ -34,8 +34,10 @@ mlflow.set_tracking_uri("file://" + str(MODEL_REGISTRY.absolute()))
 # Logging
 LOGS_DIR = Path(BASE_DIR, "logs")
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
-logging_config = Path(CONFIG_DIR, "logging.config")
-logging.config.dictConfig(logging_config)
+logging.config.fileConfig(Path(CONFIG_DIR, "logging.config"))
 logger = logging.getLogger()
-logger.handlers[0] = RichHandler(markup=True)  # pretty formatting
+logger.handlers[0] = RichHandler(markup=True)  # set rich handler
+
+
+
 
