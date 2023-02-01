@@ -1,0 +1,18 @@
+site_name: MLOPS from Made With ML
+site_url: https://madewithml.com/
+repo_url: https://github.com/GokuMohandas/mlops-course/
+nav:
+  - Home: index.md
+  - workflows:
+    - main: src/main.md
+  - tagifai:
+    - data: src/data.md
+    - evaluate: src/evaluate.md
+    - predict: src/predict.md
+    - train: src/train.md
+    - utils: src/utils.md
+theme: readthedocs
+plugins:
+  - mkdocstrings
+watch:
+  - .  # reload docs for any file changes
