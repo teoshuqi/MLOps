@@ -1,13 +1,12 @@
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
-import numpy as np
-from config import config
 from typing import List
 
-def get_metrics(
-    y_pred: np.ndarray, 
-    y_test: np.ndarray, 
-    classes: List = config.CLASSES
-    ):
+import numpy as np
+from sklearn.metrics import precision_recall_fscore_support
+
+from config import config
+
+
+def get_metrics(y_pred: np.ndarray, y_test: np.ndarray, classes: List = config.CLASSES):
     """
     Performance metrics using ground truths and predictions.
 

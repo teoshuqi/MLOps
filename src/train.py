@@ -1,20 +1,19 @@
-
 # tagifai/train.py
-from imblearn.over_sampling import RandomOverSampler
 import json
-import mlflow
-import optuna
-import numpy as np
-import pandas as pd
 from argparse import Namespace
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import log_loss
 from typing import Dict
 
-from config import config
-from src import data, predict, utils, evaluate
+import numpy as np
+import optuna
+import pandas as pd
+from imblearn.over_sampling import RandomOverSampler
+from sklearn.linear_model import LogisticRegression
 
-def train(args: Namespace, df: pd.DataFrame, trial:optuna.trial._trial.Trial=None) -> Dict:
+from config import config
+from src import data, evaluate, predict, utils
+
+
+def train(args: Namespace, df: pd.DataFrame, trial: optuna.trial._trial.Trial = None) -> Dict:
     """
     Train model on data.
 
@@ -30,24 +29,42 @@ def train(args: Namespace, df: pd.DataFrame, trial:optuna.trial._trial.Trial=Non
 
     # Preprocess Data
     cols = config.CONTINUOUS_COLS + config.CATEGORICAL_COLS
-    (X,y), label_encoder_store, minmax_scaler_store = data.preprocess(df, cols, 'Response')
-    selected_columns = ['NumCatalogPurchases', 'NumStorePurchases','MntWines', 'MntMeatProducts','Recency',
-                      'Age', 'Income','NumWebVisitsMonth','Education', 'MntGoldProds', 'MntSweetProducts']
+    (X, y), label_encoder_store, minmax_scaler_store = data.preprocess(df, cols, "Response")
+    selected_columns = [
+        "NumCatalogPurchases",
+        "NumStorePurchases",
+        "MntWines",
+        "MntMeatProducts",
+        "Recency",
+        "Age",
+        "Income",
+        "NumWebVisitsMonth",
+        "Education",
+        "MntGoldProds",
+        "MntSweetProducts",
+    ]
     X_selected = X.loc[:, selected_columns]
-    X_train, X_val, X_test, y_train, y_val, y_test = data.get_data_splits(X_selected,y)
+    X_train, X_val, X_test, y_train, y_val, y_test = data.get_data_splits(X_selected, y)
 
     # Oversample minority class (training set)
     oversample = RandomOverSampler(sampling_strategy="all", random_state=42)
     X_over, y_over = oversample.fit_resample(X_train, y_train)
 
     # Train
-    lg_model = LogisticRegression(C=args.C, solver = args.solver, max_iter = args.max_iter, tol=args.tol, n_jobs=3, 
-                                random_state=42)
+    lg_model = LogisticRegression(
+        C=args.C,
+        solver=args.solver,
+        max_iter=args.max_iter,
+        tol=args.tol,
+        n_jobs=3,
+        random_state=42,
+    )
     lg_model.fit(X_over, y_over)
     y_val_pred = lg_model.predict(X_val)
     y_val_prob = lg_model.predict_proba(X_val)
     args.threshold = np.quantile(
-        [y_val_prob[i][1] for i in range(len(y_val_pred)) if y_val.values[i] == 1], q=0.2)  # Q1
+        [y_val_prob[i][1] for i in range(len(y_val_pred)) if y_val.values[i] == 1], q=0.2
+    )  # Q1
 
     # Evaluation
     y_prob = lg_model.predict_proba(X_test)
@@ -59,14 +76,15 @@ def train(args: Namespace, df: pd.DataFrame, trial:optuna.trial._trial.Trial=Non
         "args": args,
         "model": lg_model,
         "performance": lg_performance,
-        "label_encoder":label_encoder_store,
-        "minmax_scaler":minmax_scaler_store
+        "label_encoder": label_encoder_store,
+        "minmax_scaler": minmax_scaler_store,
     }
-  
-def objective(args: Namespace, df:pd.DataFrame, trial:optuna.trial._trial.Trial) -> float:
+
+
+def objective(args: Namespace, df: pd.DataFrame, trial: optuna.trial._trial.Trial) -> float:
     """
     Objective function for optimization trials.
-    
+
     Args:
         args (Namespace): arguments to use for training
         df (pd.DataFrame): data for training
@@ -76,7 +94,9 @@ def objective(args: Namespace, df:pd.DataFrame, trial:optuna.trial._trial.Trial)
         float: metric value (recall) to be used for optimization
     """
     # Parameters to tune
-    args.solver = trial.suggest_categorical("solver", ['lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga'])
+    args.solver = trial.suggest_categorical(
+        "solver", ["lbfgs", "liblinear", "newton-cg", "newton-cholesky", "sag", "saga"]
+    )
     args.max_iter = trial.suggest_int("max_iter", 50, 1000)
     args.C = trial.suggest_uniform("C", 1e-4, 50)
     args.tol = trial.suggest_uniform("tol", 0.00001, 0.1)

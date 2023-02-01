@@ -1,21 +1,24 @@
 import json
-import numpy as np
 import random
 from typing import Dict
 
-def load_dict(filepath:str) -> Dict:
+import numpy as np
+
+
+def load_dict(filepath: str) -> Dict:
     """
     Load a dictionary from a JSON's filepath.
-    
+
     Args:
         filepath (str): location of file
-    
+
     Returns:
         Dict: loaded JSON data
     """
     with open(filepath, "r") as fp:
         d = json.load(fp)
     return d
+
 
 def save_dict(d: Dict, filepath: str, cls=None, sortkeys: bool = False) -> None:
     """
@@ -29,6 +32,7 @@ def save_dict(d: Dict, filepath: str, cls=None, sortkeys: bool = False) -> None:
     """
     with open(filepath, "w") as fp:
         json.dump(d, indent=2, fp=fp, cls=cls, sort_keys=sortkeys)
+
 
 def set_seeds(seed: int = 42) -> None:
     """

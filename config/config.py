@@ -1,8 +1,9 @@
 # config/config.py
-from pathlib import Path
-import pretty_errors
-import mlflow
 import logging
+from pathlib import Path
+
+import mlflow
+import pretty_errors  # NOQA: F401 (imported but unused)
 from rich.logging import RichHandler
 
 # Directories
@@ -14,16 +15,30 @@ DATA_DIR = Path(BASE_DIR, "data")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # Assets
-SUPERSTORE_DATA_URL = 'superstore_data.csv'
+SUPERSTORE_DATA_URL = "superstore_data.csv"
 
 # Data Config
-CONTINUOUS_COLS = ['Income', 'Kidhome', 'Teenhome', 'Recency', 
-              'MntWines', 'MntFruits', 'MntMeatProducts', 'MntFishProducts', 
-              'MntSweetProducts','MntGoldProds', 'NumDealsPurchases', 
-              'NumWebPurchases','NumCatalogPurchases', 'NumStorePurchases', 
-              'NumWebVisitsMonth','Age', 'Enrollment']
-CATEGORICAL_COLS = ['Complain', 'Education', 'Marital_Status']
-CLASSES = ['Rejected', 'Accepted']
+CONTINUOUS_COLS = [
+    "Income",
+    "Kidhome",
+    "Teenhome",
+    "Recency",
+    "MntWines",
+    "MntFruits",
+    "MntMeatProducts",
+    "MntFishProducts",
+    "MntSweetProducts",
+    "MntGoldProds",
+    "NumDealsPurchases",
+    "NumWebPurchases",
+    "NumCatalogPurchases",
+    "NumStorePurchases",
+    "NumWebVisitsMonth",
+    "Age",
+    "Enrollment",
+]
+CATEGORICAL_COLS = ["Complain", "Education", "Marital_Status"]
+CLASSES = ["Rejected", "Accepted"]
 
 # MLFLOW
 STORES_DIR = Path(BASE_DIR, "stores")
@@ -37,7 +52,3 @@ LOGS_DIR.mkdir(parents=True, exist_ok=True)
 logging.config.fileConfig(Path(CONFIG_DIR, "logging.config"))
 logger = logging.getLogger()
 logger.handlers[0] = RichHandler(markup=True)  # set rich handler
-
-
-
-

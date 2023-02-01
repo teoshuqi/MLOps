@@ -1,20 +1,23 @@
 # tagifai/main.py
-import pandas as pd
-from pathlib import Path
-from argparse import Namespace
-import warnings, json
-import mlflow
-import joblib
+import json
 import tempfile
-from numpyencoder import NumpyEncoder
+import warnings
+from argparse import Namespace
+from pathlib import Path
+from typing import Dict
+
+import joblib
+import mlflow
 import optuna
+import pandas as pd
+from numpyencoder import NumpyEncoder
 from optuna.integration.mlflow import MLflowCallback
 
 from config import config
-from typing import Dict
-from src import utils, data, train, predict
+from src import predict, train, utils
 
 warnings.filterwarnings("ignore")
+
 
 def elt_data():
     """Extract, load and transform our data assets."""
@@ -23,12 +26,13 @@ def elt_data():
     # Transform
     return
 
+
 def train_model(
-    args_fp: str = "config/args.json", 
-    experiment_name: str = "baselines", 
+    args_fp: str = "config/args.json",
+    experiment_name: str = "baselines",
     run_name: str = "lg",
-    test_run: bool = False
-    ) -> None:
+    test_run: bool = False,
+) -> None:
     """
     Train a model given arguments.
 
@@ -74,11 +78,9 @@ def train_model(
         utils.save_dict(performance, Path(config.CONFIG_DIR, "performance.json"))
 
 
-def optimize(    
-    args_fp: str = "config/args.json", 
-    study_name: str = "optimization", 
-    num_trials: int = 20
-    ) -> None:
+def optimize(
+    args_fp: str = "config/args.json", study_name: str = "optimization", num_trials: int = 20
+) -> None:
     """
     Optimize hyperparameters.
 
@@ -95,12 +97,12 @@ def optimize(
     pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=5)
     study = optuna.create_study(study_name="optimization2", direction="maximize", pruner=pruner)
 
-    mlflow_callback = MLflowCallback(
-        tracking_uri=mlflow.get_tracking_uri(), metric_name="f1")
+    mlflow_callback = MLflowCallback(tracking_uri=mlflow.get_tracking_uri(), metric_name="f1")
     study.optimize(
         lambda trial: train.objective(args, df, trial),
         n_trials=num_trials,
-        callbacks=[mlflow_callback])
+        callbacks=[mlflow_callback],
+    )
 
     # Best trial
     trials_df = study.trials_dataframe()
@@ -108,6 +110,7 @@ def optimize(
     utils.save_dict({**args.__dict__, **study.best_trial.params}, args_fp, cls=NumpyEncoder)
     config.logger.info(f"\nBest value (f1): {study.best_trial.value}")
     config.logger.info(f"Best hyperparameters: {json.dumps(study.best_trial.params, indent=2)}")
+
 
 def load_artifacts(run_id: str = None) -> Dict:
     """Load artifacts for a given run_id.
@@ -132,13 +135,14 @@ def load_artifacts(run_id: str = None) -> Dict:
         "label_encoder": label_encoder,
         "minmax_scaler": minmax_scaler,
         "model": model,
-        "performance": performance
+        "performance": performance,
     }
 
-def predict_acceptance(data: pd.DataFrame, run_id:str = None) -> None:
+
+def predict_acceptance(data: pd.DataFrame, run_id: str = None) -> None:
     """
     Predict if customers will accept superstore campaign.
-    
+
     Args:
         data (pd.DataFrame): input customer data to predict label.
         run_id (str, optional): run id to load artifacts for prediction. Defaults to None.
